@@ -60,7 +60,6 @@ for(rep in 1:100){
   }
 }
 
-
 #compute average score and confidence intervals
 result_avg = result %>% 
   group_by(df, score_type, SNR, model) %>% 
@@ -79,4 +78,4 @@ ggplot(data = result_avg %>% filter(score_type == "test"), mapping = aes(x = df,
   scale_color_manual(values=c("smooth" = "black", "baseline" = "red"))+
   scale_fill_manual(values=c("smooth" = "black", "baseline" = "red"))+
   scale_linetype_manual(values=c("smooth" = "solid", "baseline" = "dashed"))
-##ggsave("Plots/simulation.pdf", height = 2.5, width = 6)
+ggsave("Plots/simulation.pdf", height = 2.5, width = 6)

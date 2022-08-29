@@ -122,26 +122,7 @@ plot_missing = function(Y, info, Ytest, infotest){
     theme(axis.text.x = element_text(size=8, angle=30, hjust = 1))
 }
 
-plot_fit = function(test, model, geo_values, stamps, pltname){
-  Yhat_test <- test$X %*% model$B
-  colnames(Yhat_test) <- colnames(test$Y)
-  Y <- rbind(data.frame(reshape_y(test$Y, test$info), "type" = "observed"),
-                data.frame(reshape_y(Yhat_test, test$info), "type" = "predicted")) %>% 
-    mutate(type = factor(type, levels = c("predicted", "observed"))) %>%
-    mutate(ahead = as.numeric(ahead)) %>%
-    mutate(time = time_stamp + ahead) %>%
-    filter(geo_value %in% geo_values) %>% 
-    filter(time_stamp %in% stamps)
-  ggplot(Y)+
-    geom_line(aes(ahead, cases, color = type, group = interaction(time_stamp, type)))+
-    facet_grid(time_stamp~geo_value, scales = "free")+
-    theme_light()+
-    theme(legend.position="top", legend.title = element_blank())+
-    scale_color_manual(values=c("tomato1", "tomato4"))
-  ggsave(pltname, height = length(stamps) * 1.2, width = length(geo_values) * 1.5)
-}
-
-plot_fit_merged = function(train, test, model, geo_values, pltname){
+fit_merged = function(train, test, model, geo_values){
   Yhat_train <- train$X %*% model$B
   colnames(Yhat_train) <- colnames(train$Y)
   Yhat_test <- test$X %*% model$B
@@ -153,21 +134,7 @@ plot_fit_merged = function(train, test, model, geo_values, pltname){
     mutate(type = factor(type, levels = c("predicted train", "predicted test", "observed train", "unobserved test"))) %>%
     mutate(ahead = as.numeric(ahead)) %>%
     mutate(time = time_stamp + ahead) %>%
-    filter(geo_value %in% geo_values) %>%
-    filter(type %in% c("observed train", "predicted test")) %>%
-    filter(time_stamp <= as.Date("2021-10-02")) %>%
-    mutate(geo_value = paste0("Pierce County"))
-  ggplot(Y, aes(time, cases, color = type, size = type, alpha = type, group = interaction(time_stamp, type)))+
-    geom_line()+
-    geom_point()+
-    facet_grid(~geo_value)+
-    theme_light()+
-    theme(legend.position="top")+
-    theme(legend.title = element_blank())+
-    scale_size_manual(values=c( "predicted test" = 0.3, "observed train" = 0.3))+
-    scale_color_manual(values=c("predicted test" = "tomato1", "observed train" = "dodgerblue1"))+
-    scale_alpha_manual(values=c("predicted test" = 1, "observed train" = 1))
-  ggsave(pltname, height = 3, width = length(geo_values) * 5)
+    filter(geo_value %in% geo_values)
   return(Y)
 }
 
