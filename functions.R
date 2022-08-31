@@ -32,6 +32,60 @@ mrr = function(X, Y){
   return(list(B = B))
 } 
 
+
+qmpf = function(X, Y, H){
+  reshape = compute_xy(X, Y, H)
+  taus = c(0.2, 0.5, 0.8)
+  B = list()
+  for(j in 1:3){
+    cat("tau:", taus[j], "\n\n")
+    theta = rq(reshape$y ~ reshape$x + 0, tau = taus[j], weights = reshape$w, method = "fn")$coef
+    Theta = matrix(theta, nrow = ncol(H), byrow = TRUE)
+    B[[j]] = t(H %*% Theta)
+  }
+  return(list(B = B))
+} 
+
+qmrr = function(X, Y){
+  B = list()
+  taus = c(0.2, 0.5, 0.8)
+  for(j in 1:3){
+    B[[j]] = matrix(0, ncol(X), ncol(Y))
+    cat("tau:", taus[j], "\n\n")
+    for(i in 1:ncol(Y)){
+      y = Y[, i]
+      x = X[!is.na(y),]
+      y = y[!is.na(y)]
+      B[[j]][, i] = rq(y ~ x + 0, tau = taus[j], method = "fn")$coef
+      cat("ahead:", i, "out of ", ncol(Y),"\n\n")
+    }
+  }
+  return(list(B = B))
+} 
+
+correction = function(X, Y, B){
+  taus = c(0.2, 0.5, 0.8)
+  calibrate = list(lower = quantile(c(X %*% B[[1]] - Y), 1 - taus[1], na.rm = TRUE),
+                   upper = quantile(c(Y - X %*% B[[3]]), taus[3], na.rm = TRUE))
+  return(calibrate)
+}
+
+eval_qr <- function(model, calibrate, test, method, df){
+  if(is.null(calibrate)){
+    calibrate <- list(upper = 0, lower = 0)
+    calibration = "no calibration"
+  } else {
+    calibration = "calibration"
+  }
+  mae <- colMeans(abs(test$Y - test$X %*% model$B[[2]]), na.rm = TRUE)
+  mc20 <- colMeans(test$Y < test$X %*% model$B[[1]] - calibrate$lower, na.rm = TRUE)
+  mc80 <- colMeans(test$Y > test$X %*% model$B[[3]] + calibrate$upper, na.rm = TRUE)
+  mcs_avg <- rbind(data.frame(score = mean(mae), df = df, method, type = "mae", calibration),
+                   data.frame(score = mean(mc20), df = df, method, type = "mc20", calibration),
+                   data.frame(score = mean(mc80), df = df, method, type = "mc80", calibration))
+  return(mcs_avg)
+}
+
 ########## basis ##########
 
 compute_H = function(time_stamp, aheads, d){

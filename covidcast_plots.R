@@ -5,7 +5,8 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-#################LR plots###################
+################# LR ###################
+
 #plot mae vs df 
 maes_avg <- readRDS("Fits/lr_missing_maes_avg.rds")
 maes_avg0 <- readRDS("Fits/lr_non-missing_maes_avg.rds")
@@ -41,15 +42,38 @@ ggsave(paste0("Plots/lr_missing_compare_fits.pdf"), height = 3.5, width = 7)
 
 
 #plot mae vs ahead
-maes_avg <- readRDS("Fits/lr_missing_maes.rds")
+maes <- readRDS("Fits/lr_missing_maes.rds")
 
-maes %>% 
-  gather(aheads+1, key = "ahead", value = "mse") %>% mutate(ahead = as.numeric(ahead)) %>%
-  mutate(model = paste(method, ifelse(is.na(df), "", df))) %>%
-ggplot()+
-  geom_line(aes(ahead, log(mse), color = model), size = 0.3)+
+ggplot(maes)+
+  geom_line(aes(ahead, log(mae), color = model), size = 0.3)+
   scale_x_continuous(breaks = seq(min(aheads), max(aheads), 5))+
   ylab("log(test mae)")+
   theme_bw()
 ggsave(paste0("Plots/lr_mse_vs_ahead.pdf"), height = 3, width = 6)
 
+################# QR ###################
+mcs_avg <- paste0("Fits/qr_missing_mcs_avg.rds")
+       
+mcs_avg %>% filter(type == "mae") %>%
+ggplot()+
+  geom_line(mapping = aes(df, log(score), color = method, linetype = method))+
+  scale_linetype_manual(values=c("smooth" = "solid", "baseline" = "dashed"))+
+  scale_color_manual(values=c("smooth" = "black", "baseline" = "red"))+
+  ylab("log(test mae)")+
+  xlab("degrees-of-freedom")+
+  theme_bw()+
+  scale_x_continuous(breaks = dfs)+
+  facet_wrap(~calibration)
+ggsave(paste0("Plots/qr_mae_vs_df.pdf"), height = 3, width = 6)
+
+mcs_avg %>% filter(type != "mae") %>%
+  ggplot()+
+  geom_line(mapping = aes(df, score, color = type, linetype = method))+
+  scale_linetype_manual(values=c("smooth" = "solid", "baseline" = "dashed"))+
+  scale_color_manual(values=c("mc20" = "darkgreen", "mc80" = "darkorange"), labels = c("lower miscoverage rate", "upper miscoverage rate"))+
+  ylab("log(test mae)")+
+  xlab("degrees-of-freedom")+
+  theme_bw()+
+  scale_x_continuous(breaks = dfs)+
+  facet_wrap(~calibration)
+ggsave(paste0("Plots/qr_mc_vs_df.pdf"), height = 3, width = 6)
