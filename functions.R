@@ -70,20 +70,34 @@ correction = function(X, Y, B){
   return(calibrate)
 }
 
-eval_qr <- function(model, calibrate, test, method, df){
+eval_qr <- function(model, calibrate, test){
   if(is.null(calibrate)){
     calibrate <- list(upper = 0, lower = 0)
     calibration = "no calibration"
   } else {
     calibration = "calibration"
   }
-  mae <- colMeans(abs(test$Y - test$X %*% model$B[[2]]), na.rm = TRUE)
-  mc20 <- colMeans(test$Y < test$X %*% model$B[[1]] - calibrate$lower, na.rm = TRUE)
-  mc80 <- colMeans(test$Y > test$X %*% model$B[[3]] + calibrate$upper, na.rm = TRUE)
-  mcs_avg <- rbind(data.frame(score = mean(mae), df = df, method, type = "mae", calibration),
-                   data.frame(score = mean(mc20), df = df, method, type = "mc20", calibration),
-                   data.frame(score = mean(mc80), df = df, method, type = "mc80", calibration))
-  return(mcs_avg)
+
+  mae <- abs(test$Y - test$X %*% model$B[[2]])
+  mc20 <- (test$Y < test$X %*% model$B[[1]] - calibrate$lower)
+  mc80 <- (test$Y > test$X %*% model$B[[3]] + calibrate$upper)
+  
+  score_loc <- function(scores){
+    data.frame(scores, geo_value = test$info$geo_value) %>%
+      group_by(geo_value) %>%
+      summarise_at(vars(!starts_with("geo_value")), ~mean(., na.rm = T)) %>%
+      select(-geo_value) %>% rowMeans(na.rm = T)
+  }
+  
+  mcs_avg <- rbind(data.frame(score = mean(colMeans(mae, na.rm = T), na.rm = T), type = "mae", calibration),
+                   data.frame(score = mean(colMeans(mc20, na.rm = T), na.rm = T), type = "mc20", calibration),
+                   data.frame(score = mean(colMeans(mc80, na.rm = T), na.rm = T), type = "mc80", calibration))
+  
+  mcs_loc <- rbind(data.frame(score = score_loc(mae), type = "mae", calibration),
+                  data.frame(score = score_loc(mc20), type = "mc20", calibration),
+                  data.frame(score = score_loc(mc80), type = "mc80", calibration))
+ 
+  return(list(mcs_avg = mcs_avg, mcs_loc = mcs_loc))
 }
 
 ########## basis ##########
@@ -168,7 +182,7 @@ plot_missing = function(Y, info, Ytest, infotest){
                                  "unobserved train"))+
     scale_x_continuous(breaks = seq(min(aheads), max(aheads), 5))+
     scale_y_continuous(breaks = max(stampstest) - seq(0, as.numeric(max(stampstest) - min(stamps)), 7))+
-    xlab("ahead")+
+    xlab("horizon")+
     coord_flip()+
     theme_bw()+
     theme(legend.position="top")+
