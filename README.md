@@ -1,4 +1,6 @@
-# MPF
+# Multi-period forecasting
+
+*"Smooth multi-period forecasting with application to prediction of COVID-19 cases" by Tuzhilina et al.*
 
 **Data** 
 
