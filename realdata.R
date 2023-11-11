@@ -18,8 +18,8 @@ lags <- 1:28
 signals <- c("confirmed_7dav_incidence_prop", "smoothed_hh_cmnty_cli", "smoothed_cli")
 
 #train and test sets
-df_train <- readRDS(paste0("Data/", time_stamp, "_prop_", scenario ,".rds"))
-df_test <- readRDS(paste0("Data/", time_stamp, "_prop_test.rds"))
+df_train <- readRDS(paste0("train_", scenario ,".rds"))
+df_test <- readRDS(paste0("test.rds"))
 
 #filter 300 counties
 top_geo <- find_top_geo(df_train, 300)
